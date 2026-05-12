@@ -1,0 +1,827 @@
+I want to run this in mobile, is that possible?
+Copy
+Yes—but not directly on a phone as this repo is currently written.
+
+This project is a desktop automation script for Roblox:
+
+It uses pyautogui.screenshot(...) to capture part of a computer screen.
+
+It expects Roblox to be open with the market board visible.
+
+The README setup is specifically for a “Home PC”.
+
+run.bat is Windows-oriented.
+
+It sends alerts to Discord, which you can receive on mobile.
+
+So the practical setup is:
+
+Recommended mobile-friendly setup
+Run the script on a Windows PC/laptop that keeps Roblox open, then receive the Discord webhook alerts on your phone.
+
+Your phone does not need to run the script. It only needs Discord.
+
+Not currently supported directly
+Running this directly on:
+
+iPhone / iPad: not realistically possible
+
+Android phone: not supported without major changes
+
+Roblox mobile app: not compatible with the current screen-capture approach
+
+The script depends on desktop-style screen capture and local Python packages like OpenCV, Pillow, pandas, Google GenAI, and pyautogui.
+
+Possible alternatives
+If you want a mobile-like setup, you could:
+
+Run Roblox in a PC emulator / Windows machine / VPS with GUI.
+
+Keep the script running there.
+
+Use Discord mobile notifications for alerts.
+
+Optionally use Remote Desktop, AnyDesk, Chrome Remote Desktop, etc. from your phone to check/control it.
+
+Checks performed
+✅ pwd; find .. -name AGENTS.md -print; rg --files -g '!*~' | sed -n '1,120p' — inspected repo layout.
+
+✅ printf '%s\n' '--- README.md ---'; sed -n '1,220p' README.md; printf '%s\n' '--- pyproject.toml ---'; sed -n '1,220p' pyproject.toml; printf '%s\n' '--- main.py ---'; sed -n '1,260p' main.py; printf '%s\n' '--- run.bat ---'; sed -n '1,80p' run.bat — confirmed PC/Windows-oriented setup and desktop screen capture dependencies.
+
+✅ sed -n '261,520p' main.py — confirmed the app continuously screenshots the visible market board and sends Discord alerts.
+
+Yes not as it is, but by modifying it completely somehow is similar functionality possible in Android
+Copy
+Yes, similar functionality is possible on Android, but it would need to be rebuilt as an Android app/service rather than modifying this Python desktop script directly.
+
+What would be possible
+An Android version could:
+
+Capture the Roblox screen using Android’s MediaProjection screen-capture API.
+
+Periodically analyze the screenshot/cropped market board.
+
+Send the image or extracted data to Gemini.
+
+Filter for target items/percentages.
+
+Send Discord webhook alerts.
+
+Show a persistent notification while running.
+
+Android supports screen capture through MediaProjection, introduced in Android 5/API 21, and Android 14+ can allow single-app capture in some flows. Source: Android MediaProjection docs: https://developer.android.com/media/grow/media-projection
+
+Main limitation
+The hard part is that Android does not let normal apps silently inspect or control another app in the background. The user generally has to approve screen capture, and newer Android versions require foreground-service handling for ongoing capture.
+
+So an Android app could work, but it would likely need:
+
+User-granted screen capture permission.
+
+A persistent foreground notification.
+
+Roblox kept open and visible.
+
+The phone screen awake, unless you design around device sleep limitations.
+
+Careful battery/thermal handling.
+
+Current desktop design is not portable to Android
+The current repo relies on pyautogui.screenshot(...), local desktop screen regions, and a Windows run.bat, so it cannot be packaged for Android as-is.
+
+task-stub{title="Rebuild the market scanner as a native Android app"}
+Create a new Android project, preferably Kotlin-based, separate from the current Python desktop entry point.
+
+Implement screen capture using Android MediaProjection APIs:
+
+Request screen-capture consent with MediaProjectionManager.createScreenCaptureIntent.
+
+Create a MediaProjection session.
+
+Capture frames through a VirtualDisplay and ImageReader.
+
+Add a foreground service for ongoing capture on modern Android versions.
+
+Port the existing Python pipeline from main.py conceptually:
+
+take_screenshot becomes MediaProjection frame capture.
+
+crop_market_table becomes Android/OpenCV image cropping.
+
+_extract_market_with_gemini becomes a Gemini API request from Android or through a backend.
+
+get_alert_items, format_discord_message, and send_discord_notification become Kotlin equivalents.
+
+Keep the existing desktop script intact unless you want to maintain only the Android version.
+
+Recommended Android architecture
+I would not put everything directly in the mobile app if you want reliability. Better options:
+
+Option A — Android app does everything
+Roblox mobile and the scanner app run on the same device.
+
+Flow:
+
+Roblox visible on screen
+        ↓
+Android scanner app captures screen using MediaProjection
+        ↓
+Crop board image
+        ↓
+Send crop to Gemini
+        ↓
+Parse items/prices/percentages
+        ↓
+Send Discord webhook alert
+Pros:
+
+Fully mobile.
+
+No PC needed.
+
+Cons:
+
+More fragile.
+
+Battery-heavy.
+
+Requires screen-capture consent.
+
+May stop if Android kills background work.
+
+Harder to keep Roblox visible while the scanner runs.
+
+Option B — Android app captures, backend processes
+The phone captures screenshots, then sends them to a small server/cloud function.
+
+Flow:
+
+Android captures Roblox screen
+        ↓
+Uploads cropped image to backend
+        ↓
+Backend calls Gemini
+        ↓
+Backend sends Discord alert
+Pros:
+
+Keeps API keys off the phone.
+
+Easier to debug.
+
+Less work on device.
+
+Better security for Gemini and Discord secrets.
+
+Cons:
+
+Requires server/backend hosting.
+
+More moving parts.
+
+Option C — Keep PC script, use mobile only for alerts
+This is still the easiest and most reliable:
+
+PC runs Roblox + Python script
+        ↓
+Discord webhook
+        ↓
+Phone receives alert
+Pros:
+
+Already closest to working.
+
+Most stable.
+
+No Android screen-capture limitations.
+
+Cons:
+
+Requires a PC always running.
+
+Important security note
+If you build an Android app, avoid embedding these directly in the APK:
+
+GEMINI_API_KEY
+
+DISCORD_WEBHOOK_URL
+
+Anyone with the APK could potentially extract them. A backend is safer.
+
+Bottom line
+Yes, it is possible on Android, but it is essentially a new Android app, not a small change to this repo. The closest equivalent would use Android MediaProjection for screenshots, Android/OpenCV or server-side cropping, Gemini for OCR/data extraction, and Discord webhook alerts.
+
+Checks performed
+✅ pwd; find .. -name AGENTS.md -print; rg --files -g '!*~' | sed -n '1,120p' — inspected repository structure.
+
+✅ printf '%s\n' '--- README.md ---'; sed -n '1,220p' README.md; printf '%s\n' '--- pyproject.toml ---'; sed -n '1,220p' pyproject.toml; printf '%s\n' '--- main.py ---'; sed -n '1,260p' main.py; printf '%s\n' '--- run.bat ---'; sed -n '1,80p' run.bat — verified the current implementation is desktop/Windows/Python-oriented.
+
+✅ sed -n '261,520p' main.py — reviewed alerting and screenshot-processing logic.
+
+✅ Web lookup — checked current official Android documentation for MediaProjection, foreground-service implications, and AccessibilityService constraints.
+
+So basically I have an old tablet device which I'll using to afk farm for few hours everyday, it doesn't get much heated and battery isn't issue. Even if the tablet dies that's fine. Basically I don't want to give so much stress to my laptop. Considering it's old so it won't be able to take too much load either, so considering this what should be ideal for me? Ask any questions if you have.
+Copy
+Ideal setup for your case
+Given your goal — use an old Android tablet to AFK farm for a few hours daily and avoid stressing your laptop — the best design is:
+
+Run Roblox on the tablet, capture the tablet screen every few minutes, send the cropped market image to a lightweight backend, and let the backend/Gemini/Discord do the heavy work.
+
+That means the tablet does only the minimum work:
+
+Tablet:
+Roblox open → capture screen → crop/compress image → upload
+
+Backend:
+Gemini reads market → checks item percentages → sends Discord alert
+This is better than making the tablet run full image processing + Gemini logic locally.
+
+Why this is probably the best option
+Your current desktop script does these jobs:
+
+Takes screenshot.
+
+Crops the market board.
+
+Sends image to Gemini.
+
+Parses market data.
+
+Sends Discord alert.
+
+Sleeps until next refresh.
+
+On an old Android tablet, I would not make it do all of that if avoidable. The tablet should mostly just capture and upload.
+
+Android supports screen capture through the MediaProjection API, but the user must approve capture, and ongoing capture usually requires a foreground service/notification on modern Android. Android docs:
+https://developer.android.com/media/grow/media-projection
+https://developer.android.com/develop/background-work/services/fgs/service-types
+
+Since your tablet will be sitting there with Roblox open, that limitation is acceptable.
+
+Recommended architecture
+Best practical version
+Old Android tablet
+  - Roblox running visibly
+  - Custom Android capture app/service running in foreground
+  - Captures screen every ~180 seconds
+  - Crops/resizes/compresses image
+  - Uploads image to backend
+
+Small backend/server
+  - Receives image
+  - Calls Gemini
+  - Filters target items
+  - Sends Discord webhook alert
+
+Your phone
+  - Receives Discord notification
+This keeps the tablet load low.
+
+Why not run everything on the tablet?
+You can, but I would avoid it unless you really want a fully standalone device.
+
+Reasons:
+
+Gemini/Discord API keys inside an APK are easier to extract.
+
+Old tablets may struggle with OpenCV/image processing.
+
+Android may kill background work more aggressively.
+
+Network/API retries are easier to handle on a backend.
+
+Debugging is easier if the logic lives on a server.
+
+Android also limits background behavior, especially when the screen is off or apps are idle. If your screen stays on with Roblox visible, this is less of a problem. Android’s screen-awake guidance notes that keeping the screen on is normally tied to an activity/foreground usage pattern:
+https://developer.android.com/develop/background-work/background-tasks/awake/screen-on
+
+Tablet settings I would use
+For your AFK tablet:
+
+Keep screen on while charging.
+
+Disable battery optimization for the capture app if possible.
+
+Keep Roblox in foreground.
+
+Use low brightness if the game still renders properly.
+
+Capture only every 2–3 minutes, matching the market refresh.
+
+Upload compressed JPEG/WebP, not full-resolution PNG.
+
+Crop before upload if the crop coordinates are stable.
+
+Use Wi-Fi, not mobile data.
+
+Let Discord alert your main phone.
+
+Is rooting needed?
+Probably no.
+
+Root could make screenshot automation easier, but I would avoid relying on root. A normal Android app using MediaProjection should be enough, assuming:
+
+You manually grant screen-capture permission when starting.
+
+The app runs a foreground service.
+
+Roblox stays visible.
+
+Easiest path depending on your effort level
+If you want least development
+Keep the current laptop/PC solution and just receive Discord alerts on mobile.
+
+If you want to move farming to the tablet
+Build a small Android capture app plus backend. This is my recommended path.
+
+If you want no backend
+Build a full Android app that captures the screen and directly calls Gemini + Discord. Possible, but worse for security and reliability.
+
+My recommendation
+For your exact situation, I would do this:
+
+Use the old tablet only for Roblox AFK farming.
+
+Build/install a small Android “screen capture uploader” app.
+
+Use a lightweight backend for Gemini + Discord.
+
+Capture once every market cycle, not continuously.
+
+Do not run heavy OCR/OpenCV loops on the tablet.
+
+That gives you the benefit you want: your laptop does no Roblox/GPU work, and the old tablet only does a light screenshot/upload task every few minutes.
+
+Questions
+To recommend the exact build path, I need these:
+
+What Android version is the tablet running?
+Example: Android 8, 10, 11, 12, etc.
+
+Are you okay installing a custom APK not from Play Store?
+
+Do you already have any backend/server option?
+For example: VPS, Replit, Render, Cloudflare Worker, home PC always online, etc.
+
+Does the Roblox market board look readable on the tablet screen?
+If the mobile UI layout is different or too small, the Gemini extraction prompt/crop logic may need to be redesigned.
+
+Do you need it fully automatic after reboot, or is manual start okay?
+Manual start is much easier because Android screen-capture permission usually requires user approval.
+
+Checks
+✅ Web lookup — reviewed current Android documentation for MediaProjection, foreground service requirements, and keeping the screen awake.
+
+What Android version is the tablet running?
+And: Acer One T4-82L, Android 10
+
+Are you okay installing a custom APK not from Play Store?
+And: Absolutely yes
+
+Do you already have any backend/server option?
+And: Not right now but I can get
+
+Does the Roblox market board look readable on the tablet screen?
+If the mobile UI layout is different or too small, the Gemini extraction prompt/crop logic may need to be redesigned.
+And: yes absolutely readable easily 
+
+Do you need it fully automatic after reboot, or is manual start okay?
+Manual start is much easier because Android screen-capture permission usually requires user approval.
+Ans: Manual start is okay.
+
+Your option to just take screenshot in tablet and process later in a backend server seems good to me, just one thing with screenshot I would also need 1 auto click every 15 mins, so that Roblox doesn't disconnects me in 20 mins and respawn the character at beginning.
+Copy
+Short answer
+For your exact situation, I’d build an Android tablet companion app + small backend.
+
+The tablet would:
+
+Run Roblox normally.
+
+Keep the market screen visible.
+
+Every few minutes, take a screenshot using Android screen capture.
+
+Upload the screenshot/crop to a backend.
+
+Every 15 minutes, perform one small auto-tap/swipe so Roblox does not idle-disconnect.
+
+The backend would:
+
+Receive the screenshot.
+
+Send it to Gemini.
+
+Extract market rows.
+
+Check your target items/percentage range.
+
+Send Discord alerts.
+
+This is a good fit for your Acer One T4-82L on Android 10.
+
+Recommended design for your tablet
+Device role: lightweight worker
+Your tablet should not do heavy processing. It should mostly act as:
+
+Roblox display + periodic screenshot uploader + simple anti-idle tapper
+The heavier jobs should move to a backend:
+
+OCR/Gemini parsing + filtering + Discord alerting
+That means the old tablet only does light work every few minutes.
+
+Why Android 10 is actually okay here
+Android 10 supports the important pieces you need:
+
+1. Screen capture
+Android’s MediaProjection API can capture the device screen after the user grants permission. Android’s docs say MediaProjection APIs were introduced in Android 5/API 21 for capturing display contents, so Android 10 is supported.
+Source: https://developer.android.google.cn/media/grow/media-projection?hl=en
+
+For Android 10 specifically, foreground-service typing matters for media projection. Android’s docs state that Android 10 introduced the android:foregroundServiceType manifest attribute, including the media projection service type.
+Source: https://developer.android.google.cn/about/versions/14/changes/fgs-types-required?hl=en
+
+Since you said manual start is okay, the flow is very manageable:
+
+Open companion app
+Tap "Start"
+Accept screen-capture prompt
+Switch to Roblox
+Leave tablet farming
+2. Auto-click / anti-idle
+For the tap every 15 minutes, the clean Android way is an AccessibilityService that can perform gestures. Android documents that an accessibility service can dispatch gestures with dispatchGesture(), and the service configuration can use android:canPerformGestures="true".
+Sources:
+https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
+https://developer.android.com/guide/topics/ui/accessibility/service?hl=en
+
+So the app would ask you to enable its accessibility service once in Android settings.
+
+Then it can do something like:
+
+Every 15 minutes:
+  tap a harmless coordinate
+  or tiny swipe/jump/action
+Important Roblox anti-idle note
+A plain tap may or may not be enough depending on how Roblox detects activity on mobile. Safer options are:
+
+Tiny camera drag/swipe every 15 minutes.
+
+Jump button tap if it does not disturb your farming.
+
+Tap an empty screen area if Roblox accepts it as input.
+
+Small movement joystick tap/drag, only if it does not break farming.
+
+I would start with:
+
+tiny swipe on right side of screen every 14 minutes
+Why 14 minutes instead of 15? Because Roblox disconnects around 20 minutes of inactivity, and a 14-minute interval gives safety margin if the tablet lags.
+
+Example schedule:
+
+Screenshot market: every 180 seconds
+Anti-idle gesture: every 14 minutes
+Backend alert check: after every screenshot
+Ideal architecture
+Tablet app
+The Android app should have two foreground components:
+
+A. Screen capture service
+Responsibilities:
+
+Start MediaProjection after user consent.
+
+Capture one frame every market cycle.
+
+Optionally crop to the market-board area.
+
+Compress to JPEG/WebP.
+
+Upload to backend.
+
+Keep a persistent notification like:
+
+Mini War Scanner running
+Capturing market every 3 minutes
+B. Accessibility anti-idle service
+Responsibilities:
+
+Wait 14–15 minutes.
+
+Dispatch a simple gesture.
+
+Avoid tapping sensitive UI buttons.
+
+Continue while Roblox is foreground.
+
+Backend
+The backend can be very small.
+
+Recommended stack:
+
+Python FastAPI backend
+Why? Because your existing code is already Python. You can reuse most of the logic from the current script:
+
+Gemini extraction prompt.
+
+Market JSON parsing.
+
+Alert filtering.
+
+Discord webhook sending.
+
+The only major difference:
+
+Current desktop script:
+
+pyautogui screenshot → OpenCV crop → Gemini → Discord
+New version:
+
+Android upload → backend receives image → Gemini → Discord
+Backend hosting options
+Since you said you can get a backend, I’d choose one of these:
+
+Option 1: Cheap VPS — best reliability
+Examples:
+
+Hetzner
+
+DigitalOcean
+
+Linode
+
+Vultr
+
+Oracle free tier if you’re comfortable with setup
+
+Pros:
+
+Reliable.
+
+Simple Python server.
+
+Can store logs/images for debugging.
+
+Easy to run continuously.
+
+Cons:
+
+Small monthly cost.
+
+Requires basic server setup.
+
+This is my recommended option if you want it to be stable.
+
+Option 2: Render / Railway / Fly.io
+Pros:
+
+Easier deployment.
+
+Good enough for a small API.
+
+Cons:
+
+Free tiers may sleep.
+
+Background reliability varies.
+
+File upload limits/timeouts may matter.
+
+Option 3: Cloudflare Worker
+Pros:
+
+Very cheap/free.
+
+Great uptime.
+
+Cons:
+
+Harder if you want Python/OpenCV.
+
+Better for forwarding to Gemini than doing image processing.
+
+For your case, I’d use FastAPI on a cheap VPS.
+
+My exact recommendation
+Given your tablet, tolerance for manual start, and need for one auto-click, I recommend:
+
+Build a custom Android APK
+Features:
+
+Start/stop button.
+
+MediaProjection screenshot permission.
+
+Foreground notification.
+
+Screenshot every 3 minutes.
+
+Upload screenshot/crop to backend.
+
+AccessibilityService for one tiny gesture every 14 minutes.
+
+Config screen for:
+
+Backend URL
+
+Screenshot interval
+
+Anti-idle interval
+
+Gesture coordinates
+
+Crop coordinates
+
+JPEG quality
+
+Build a Python backend
+Features:
+
+POST /scan
+
+Accept image upload.
+
+Run Gemini extraction.
+
+Filter configured items.
+
+Send Discord webhook.
+
+Return parsed result to tablet for logging.
+
+How the session would work
+Every day when you want to farm:
+
+Plug in tablet if needed.
+
+Open Roblox.
+
+Go to the market board.
+
+Open companion app.
+
+Tap Start Scanner.
+
+Accept screen capture prompt.
+
+Confirm accessibility service is enabled.
+
+Switch back to Roblox.
+
+Leave it running.
+
+The tablet then does:
+
+Every 3 minutes:
+  capture screen
+  upload image
+  backend checks market
+  Discord alert if useful
+
+Every 14 minutes:
+  perform tiny touch gesture
+What I would avoid
+Avoid running Gemini directly from the tablet
+It is possible, but I would avoid it because:
+
+Your Gemini API key would be inside the APK or app storage.
+
+Reverse engineering the APK could expose secrets.
+
+Old tablet may be slower and less reliable.
+
+Backend logs make debugging much easier.
+
+Avoid using ADB scripts for auto-click
+ADB could do:
+
+adb shell input tap x y
+But that requires another computer connected or wireless ADB setup. Since your goal is to reduce laptop dependency, AccessibilityService is better.
+
+Avoid full-screen video recording
+You do not need continuous recording. Capture one screenshot every few minutes. That reduces:
+
+CPU load
+
+Battery drain
+
+Heat
+
+Network usage
+
+Backend cost
+
+Gemini cost
+
+One important question about the anti-idle tap
+For the auto-click, I need one key detail:
+
+What action is safe in your Roblox farming setup?
+Choose the best one:
+
+Tiny camera swipe
+Usually safest if camera movement does not affect farming.
+
+Jump button tap
+Good if jumping does not disrupt the character.
+
+Tap empty area
+Least intrusive, but may not always count as activity.
+
+Small movement joystick nudge
+More likely to count as activity, but could move your character away.
+
+My default recommendation is:
+
+Tiny camera swipe every 14 minutes on the right side of the screen.
+
+It is usually safer than movement and more likely to count as input than tapping an empty area.
+
+Development plan if you want to proceed
+If you want, I can help turn this repo into a two-part project:
+
+mini-war-roblox/
+  backend/
+    FastAPI server
+    Gemini extraction
+    Discord alerting
+  android/
+    Kotlin Android app
+    MediaProjection screenshot capture
+    AccessibilityService anti-idle gesture
+The first working version should be simple:
+
+Version 1
+Manual start.
+
+Full screenshot upload.
+
+Backend Gemini extraction.
+
+Discord alert.
+
+Anti-idle tap/swipe every 14 minutes.
+
+Version 2
+Crop calibration UI.
+
+Better logs.
+
+Retry uploads.
+
+Local status screen.
+
+Configurable gesture coordinates.
+
+Save last screenshot for debugging.
+
+Final recommendation
+For your use case, the ideal setup is:
+
+Old Android tablet runs Roblox + a custom capture/anti-idle APK. A small Python backend processes screenshots with Gemini and sends Discord alerts.
+
+This gives you:
+
+No laptop stress.
+
+Low tablet load.
+
+Mobile AFK farming.
+
+Reliable Discord alerts.
+
+Safe API key storage on backend.
+
+Manual start, which fits Android’s permission model.
+
+I would not try to run the existing Python script directly on Android. I would reuse its Gemini/Discord logic on a backend and write a small native Android client for screenshot + anti-idle.
+
+okay let's start with a simple app/service that will capture screen every 3 mins from android and tap at a specific coordinate once every 14 mins (and yes single tap is sufficient for anti afk, I tested it). Cropping part I want to keep it to the backend and let's keep image compressing optional as i don't know how much load it will give to tablet.
+Copy
+Summary
+
+Added a native Android app scaffold with Gradle configuration for :android:app, targeting Android 10-compatible installs with minSdk 29 / targetSdk 29. 
+
+Added Android permissions and service declarations for a MediaProjection foreground capture service and an AccessibilityService anti-AFK tapper. 
+
+Added a simple Android UI for backend URL, 180-second capture interval, 840-second anti-AFK tap interval, tap coordinates, optional JPEG upload, and start/stop/accessibility actions. 
+
+Added shared scanner defaults: screen capture every 180 seconds and anti-AFK tap every 14 minutes by default. 
+
+Added the screen-capture foreground service that captures the full Android screen, optionally encodes as JPEG instead of PNG, and uploads to the configured backend as multipart field image. 
+
+Added the AccessibilityService tapper that dispatches one tap at the configured coordinate on the configured interval, only while the official Roblox package com.roblox.client is foregrounded. 
+
+Documented Android build/install steps, tablet setup, default intervals, optional JPEG setting, and backend upload contract. 
+
+Added Android/Gradle build-output ignores. 
+
+Committed changes with commit ce9b72e and created the PR record.
+
+Testing
+
+✅ python - <<'PY' import pathlib, xml.etree.ElementTree as ET for path in pathlib.Path('android/app/src/main').rglob('*.xml'): ET.parse(path) print('xml ok') PY
+
+✅ git diff --cached --check
+
+⚠️ gradle :android:app:assembleDebug — could not complete in this environment because the Android Gradle plugin could not be resolved from the configured repositories.

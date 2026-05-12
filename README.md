@@ -47,6 +47,12 @@ Or double-click:
 run.bat
 ```
 
+This desktop mode still works exactly as the original flow:
+
+```text
+PC screenshot -> crop -> Gemini -> filter -> Discord alert
+```
+
 ## Calibration
 
 If the script cannot find the board on the home PC, adjust this value in `.env`:
@@ -81,6 +87,69 @@ MAX_ALERT_PERCENTAGE=50
 
 `.env` is ignored by git. Keep API keys and Discord webhooks private.
 
+## Android Backend Mode
+
+The repo can also run as a backend for the Android tablet app.
+
+In this mode:
+
+```text
+Android screenshot upload -> backend crop -> Gemini -> filter -> Discord alert
+```
+
+### Start The Backend
+
+1. Install dependencies:
+
+```powershell
+uv sync
+```
+
+2. Run the API server:
+
+```powershell
+uv run uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+3. Point the Android app backend URL to:
+
+```text
+http://YOUR_PC_IP:8000/scan
+```
+
+If the tablet and PC are on the same Wi-Fi, replace `YOUR_PC_IP` with the PC's local network IP.
+
+### API Contract
+
+Endpoint:
+
+```http
+POST /scan
+Content-Type: multipart/form-data
+```
+
+Multipart field:
+
+```text
+image = market.png or market.jpg
+```
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "next_price_in": "02:51",
+  "items": [],
+  "alert_items": [],
+  "debug": {
+    "screenshot_path": "debug_uploads/scan_..._screenshot.png",
+    "crop_path": "debug_uploads/scan_..._crop.png"
+  }
+}
+```
+
+Uploaded screenshots and crops are saved under `debug_uploads/` for debugging.
 
 ## Android Tablet Capture App
 
