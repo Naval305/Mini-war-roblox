@@ -1,5 +1,6 @@
 package com.miniwar.scanner;
 
+import android.app.PendingIntent;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,7 +15,6 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -30,8 +30,12 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.util.Log;
 
 public class ScreenCaptureService extends Service {
+    public static final String ACTION_START = "com.miniwar.scanner.ACTION_START";
+    public static final String ACTION_STOP = "com.miniwar.scanner.ACTION_STOP";
+
     static final String EXTRA_RESULT_CODE = "result_code";
     static final String EXTRA_RESULT_DATA = "result_data";
 
@@ -42,11 +46,14 @@ public class ScreenCaptureService extends Service {
     private Handler workerHandler;
     private MediaProjection mediaProjection;
     private final AtomicBoolean captureInProgress = new AtomicBoolean(false);
+    private final AtomicBoolean isCaptureEnabled = new AtomicBoolean(false);
 
     private final Runnable captureRunnable = new Runnable() {
         @Override
         public void run() {
-            captureOnce();
+            if (isCaptureEnabled.get()) {
+                captureOnce();
+            }
         }
     };
 
@@ -61,9 +68,23 @@ public class ScreenCaptureService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForeground(NOTIFICATION_ID, buildNotification("Starting screen capture"));
+        if (intent == null) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
-        if (intent == null || !intent.hasExtra(EXTRA_RESULT_CODE) || !intent.hasExtra(EXTRA_RESULT_DATA)) {
+        String action = intent.getAction();
+        if (ACTION_START.equals(action)) {
+            startCaptureWithDelay();
+            return START_STICKY;
+        } else if (ACTION_STOP.equals(action)) {
+            stopCapture();
+            return START_STICKY;
+        }
+
+        startForeground(NOTIFICATION_ID, buildNotification("Ready to capture"));
+
+        if (!intent.hasExtra(EXTRA_RESULT_CODE) || !intent.hasExtra(EXTRA_RESULT_DATA)) {
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -84,9 +105,20 @@ public class ScreenCaptureService extends Service {
             }
         }, workerHandler);
 
-        workerHandler.removeCallbacks(captureRunnable);
-        workerHandler.post(captureRunnable);
         return START_STICKY;
+    }
+
+    private void startCaptureWithDelay() {
+        isCaptureEnabled.set(true);
+        updateNotification("Starting in 10 seconds...");
+        workerHandler.removeCallbacks(captureRunnable);
+        workerHandler.postDelayed(captureRunnable, 10000L);
+    }
+
+    private void stopCapture() {
+        isCaptureEnabled.set(false);
+        workerHandler.removeCallbacks(captureRunnable);
+        updateNotification("Capture stopped. Ready.");
     }
 
     private void captureOnce() {
@@ -176,7 +208,7 @@ public class ScreenCaptureService extends Service {
 
     private void uploadBitmap(Bitmap bitmap) throws IOException {
         SharedPreferences prefs = ScannerPrefs.get(this);
-        String backendUrl = prefs.getString(ScannerPrefs.KEY_BACKEND_URL, "").trim();
+        String backendUrl = BuildConfig.BACKEND_URL.trim();
         boolean useJpeg = prefs.getBoolean(ScannerPrefs.KEY_USE_JPEG, false);
         int jpegQuality = Math.min(100, Math.max(1, ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_JPEG_QUALITY, ScannerPrefs.DEFAULT_JPEG_QUALITY)));
 
@@ -219,7 +251,7 @@ public class ScreenCaptureService extends Service {
     }
 
     private void scheduleNextCapture() {
-        if (workerHandler == null) {
+        if (workerHandler == null || !isCaptureEnabled.get()) {
             return;
         }
         int intervalSeconds = ScannerPrefs.getPositiveInt(
@@ -231,14 +263,23 @@ public class ScreenCaptureService extends Service {
     }
 
     private Notification buildNotification(String text) {
-        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-            ? new Notification.Builder(this, CHANNEL_ID)
-            : new Notification.Builder(this);
+        Intent startIntent = new Intent(this, ScreenCaptureService.class);
+        startIntent.setAction(ACTION_START);
+        int flags = PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent startPendingIntent = PendingIntent.getService(this, 1, startIntent, flags);
+
+        Intent stopIntent = new Intent(this, ScreenCaptureService.class);
+        stopIntent.setAction(ACTION_STOP);
+        PendingIntent stopPendingIntent = PendingIntent.getService(this, 2, stopIntent, flags);
+
+        Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
         return builder
             .setContentTitle("Mini War Scanner")
             .setContentText(text)
             .setSmallIcon(com.miniwar.scanner.R.drawable.ic_notification)
             .setOngoing(true)
+            .addAction(new Notification.Action.Builder(null, "Start", startPendingIntent).build())
+            .addAction(new Notification.Action.Builder(null, "Stop", stopPendingIntent).build())
             .build();
     }
 
@@ -248,9 +289,6 @@ public class ScreenCaptureService extends Service {
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return;
-        }
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_ID,
             "Screen Capture",

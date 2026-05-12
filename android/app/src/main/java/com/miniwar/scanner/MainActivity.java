@@ -26,7 +26,6 @@ public class MainActivity extends Activity {
     private static final int REQUEST_MEDIA_PROJECTION = 1001;
     private static final int REQUEST_NOTIFICATIONS = 1002;
 
-    private EditText backendUrlInput;
     private EditText captureIntervalInput;
     private EditText tapIntervalInput;
     private EditText tapXInput;
@@ -61,7 +60,6 @@ public class MainActivity extends Activity {
         help.setPadding(0, 24, 0, 24);
         root.addView(help);
 
-        backendUrlInput = addInput(root, "Backend upload URL", prefs.getString(ScannerPrefs.KEY_BACKEND_URL, ""));
         captureIntervalInput = addInput(root, "Capture interval seconds", String.valueOf(ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_CAPTURE_INTERVAL_SECONDS, ScannerPrefs.DEFAULT_CAPTURE_INTERVAL_SECONDS)));
         tapIntervalInput = addInput(root, "Anti-AFK tap interval seconds", String.valueOf(ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_TAP_INTERVAL_SECONDS, ScannerPrefs.DEFAULT_TAP_INTERVAL_SECONDS)));
         tapXInput = addInput(root, "Tap X coordinate", String.valueOf(ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_TAP_X, ScannerPrefs.DEFAULT_TAP_X)));
@@ -120,7 +118,6 @@ public class MainActivity extends Activity {
 
     private void saveSettings() {
         ScannerPrefs.get(this).edit()
-            .putString(ScannerPrefs.KEY_BACKEND_URL, backendUrlInput.getText().toString().trim())
             .putString(ScannerPrefs.KEY_CAPTURE_INTERVAL_SECONDS, captureIntervalInput.getText().toString().trim())
             .putString(ScannerPrefs.KEY_TAP_INTERVAL_SECONDS, tapIntervalInput.getText().toString().trim())
             .putString(ScannerPrefs.KEY_TAP_X, tapXInput.getText().toString().trim())
@@ -163,7 +160,7 @@ public class MainActivity extends Activity {
         } else {
             startService(serviceIntent);
         }
-        Toast.makeText(this, "Capture service started. Switch back to Roblox.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Capture service ready. Use notification buttons to start/stop.", Toast.LENGTH_LONG).show();
     }
 
     private void requestNotificationPermissionIfNeeded() {

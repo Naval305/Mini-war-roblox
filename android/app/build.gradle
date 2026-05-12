@@ -2,9 +2,16 @@ plugins {
     id 'com.android.application'
 }
 
+Properties properties = new Properties()
+properties.load(rootProject.file("local.properties").newDataInputStream())
+
 android {
     namespace 'com.miniwar.scanner'
     compileSdk 35
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         applicationId 'com.miniwar.scanner'
@@ -12,5 +19,6 @@ android {
         targetSdk 29
         versionCode 1
         versionName '0.1.0'
+        buildConfigField "String", "BACKEND_URL", "\"${properties.getProperty('BACKEND_URL')}\""
     }
 }

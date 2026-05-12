@@ -1,5 +1,6 @@
 from datetime import UTC
 from datetime import datetime
+import traceback
 
 from fastapi import FastAPI
 from fastapi import File
@@ -30,6 +31,9 @@ async def scan(image: UploadFile = File(...)):
     try:
         result = process_image_bytes(image_bytes, save_prefix=save_prefix)
     except Exception as exc:
+        traceback.print_exc()
+        with open("output_image.png", "wb") as f:
+            f.write(image_bytes)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if not result.alert_items.empty:
