@@ -10,3 +10,11 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Android/Gradle-generated files
+.gradle/
+android/**/build/
+*.apk
+*.ap_
+*.aab
+local.properties

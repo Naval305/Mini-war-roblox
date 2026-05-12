@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Mini War Scanner</string>
+    <string name="accessibility_service_label">Mini War Anti-AFK Tapper</string>
+    <string name="accessibility_service_description">Taps a configured screen coordinate every 14 minutes while enabled.</string>
+</resources>
