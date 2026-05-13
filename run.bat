@@ -17,7 +17,7 @@ if not exist ".env" (
     exit /b 1
 )
 
-uv sync
-uv run python main.py
+uv sync --extra desktop
+uv run --extra desktop python -m backend.desktop.main
 
 pause

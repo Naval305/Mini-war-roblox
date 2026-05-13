@@ -1,16 +1,13 @@
 import json
 import os
 import re
-import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
 
 import cv2
 import numpy as np
 import pandas as pd
-import pyautogui
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -18,12 +15,9 @@ from PIL import Image
 
 load_dotenv()
 
-DEFAULT_ITEMS = ["Diamonds", "Uran Ore", "Stable Uran", "Data Cube"]
-DEFAULT_SCREENSHOT_REGION = (1400, 150, 2600, 800)
+DEFAULT_ITEMS = ["Research", "Diamonds", "Uran Ore", "Stable Uran", "Data Cube", "Dark Matter"]
 DEFAULT_MIN_ALERT_PERCENTAGE = 27
 DEFAULT_MAX_ALERT_PERCENTAGE = 50
-REFRESH_INTERVAL_SECONDS = 180
-POST_REFRESH_DELAY_SECONDS = 3
 
 
 def _env_list(name, default):
@@ -48,27 +42,7 @@ def _env_int(name, default):
         raise ValueError(f"{name} must be an integer.") from exc
 
 
-def _env_region(name, default):
-    value = os.getenv(name)
-    if not value:
-        return default
-
-    parts = [part.strip() for part in value.split(",")]
-    if len(parts) != 4:
-        raise ValueError(f"{name} must contain 4 comma-separated integers: x,y,w,h.")
-
-    try:
-        x, y, width, height = [int(part) for part in parts]
-    except ValueError as exc:
-        raise ValueError(f"{name} must contain only integers: x,y,w,h.") from exc
-
-    if width <= 0 or height <= 0:
-        raise ValueError(f"{name} width and height must be positive.")
-    return (x, y, width, height)
-
-
 ITEMS = _env_list("ITEMS", DEFAULT_ITEMS)
-SCREENSHOT_REGION = _env_region("SCREENSHOT_REGION", DEFAULT_SCREENSHOT_REGION)
 MIN_ALERT_PERCENTAGE = _env_int("MIN_ALERT_PERCENTAGE", DEFAULT_MIN_ALERT_PERCENTAGE)
 MAX_ALERT_PERCENTAGE = _env_int("MAX_ALERT_PERCENTAGE", DEFAULT_MAX_ALERT_PERCENTAGE)
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
@@ -82,32 +56,6 @@ class ScanResult:
     next_price_in: str | None
     items: pd.DataFrame
     alert_items: pd.DataFrame
-    crop_path: str | None = None
-    screenshot_path: str | None = None
-
-
-def take_screenshot(region=SCREENSHOT_REGION):
-    screenshot = pyautogui.screenshot(region=region)
-    image = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-    image = trim_black_borders(image)
-    cv2.imwrite("latest_screenshot.png", image)
-    return image
-
-
-def trim_black_borders(image, threshold=8, padding=0):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    content_mask = gray > threshold
-
-    rows = np.where(content_mask.any(axis=1))[0]
-    cols = np.where(content_mask.any(axis=0))[0]
-    if rows.size == 0 or cols.size == 0:
-        return image
-
-    y1 = max(0, rows[0] - padding)
-    y2 = min(image.shape[0], rows[-1] + padding + 1)
-    x1 = max(0, cols[0] - padding)
-    x2 = min(image.shape[1], cols[-1] + padding + 1)
-    return image[y1:y2, x1:x2]
 
 
 def crop_market_table(img):
@@ -154,17 +102,6 @@ def crop_market_table(img):
     x2 = min(w, x + cw - pad_x)
     y2 = min(h, y + ch - pad_y)
     return img[y1:y2, x1:x2]
-
-
-def _timer_to_seconds(timer_text):
-    if not timer_text:
-        return REFRESH_INTERVAL_SECONDS
-
-    try:
-        minutes, seconds = timer_text.split(":", maxsplit=1)
-        return int(minutes) * 60 + int(seconds)
-    except ValueError:
-        return REFRESH_INTERVAL_SECONDS
 
 
 def _cv2_to_pil(image):
@@ -327,19 +264,8 @@ def notify(alert_items):
     send_discord_notification(message)
 
 
-def process_image(image, save_prefix=None):
-    screenshot_path = None
-    crop_path = None
-
-    if save_prefix:
-        screenshot_path = f"{save_prefix}_screenshot.png"
-        cv2.imwrite(screenshot_path, image)
-
+def process_image(image):
     crop = crop_market_table(image)
-    if save_prefix:
-        crop_path = f"{save_prefix}_crop.png"
-        cv2.imwrite(crop_path, crop)
-
     data = _extract_market_with_gemini(crop)
     next_price_in, items = _market_json_to_result(data)
     alert_items = get_alert_items(items)
@@ -347,40 +273,12 @@ def process_image(image, save_prefix=None):
         next_price_in=next_price_in,
         items=items,
         alert_items=alert_items,
-        crop_path=crop_path,
-        screenshot_path=screenshot_path,
     )
 
 
-def process_image_bytes(image_bytes, save_prefix=None):
+def process_image_bytes(image_bytes):
     image_array = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
     if image is None:
         raise ValueError("Could not decode uploaded image.")
-    return process_image(image, save_prefix=save_prefix)
-
-
-def extract_market_table():
-    screenshot = take_screenshot()
-    return process_image(screenshot, save_prefix="latest")
-
-
-def desktop_poll_once():
-    started_at = time.monotonic()
-    result = extract_market_table()
-    elapsed = time.monotonic() - started_at
-    return result, elapsed
-
-
-def compute_sleep_seconds(next_price_in, elapsed):
-    seconds_until_refresh = _timer_to_seconds(next_price_in)
-    return max(
-        POST_REFRESH_DELAY_SECONDS,
-        seconds_until_refresh - elapsed + POST_REFRESH_DELAY_SECONDS,
-    )
-
-
-def ensure_debug_dir():
-    debug_dir = Path("debug_uploads")
-    debug_dir.mkdir(exist_ok=True)
-    return debug_dir
+    return process_image(image)

@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 final class ScannerPrefs {
     static final String PREFS_NAME = "mini_war_scanner";
     static final String KEY_BACKEND_URL = "backend_url";
+    static final String KEY_SCAN_API_KEY = "scan_api_key";
     static final String KEY_CAPTURE_INTERVAL_SECONDS = "capture_interval_seconds";
     static final String KEY_TAP_INTERVAL_SECONDS = "tap_interval_seconds";
     static final String KEY_TAP_X = "tap_x";
@@ -23,6 +24,23 @@ final class ScannerPrefs {
 
     static SharedPreferences get(Context context) {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    static String getOptionalString(SharedPreferences prefs, String key, String defaultValue) {
+        String value = prefs.getString(key, "");
+        if (value != null && !value.trim().isEmpty()) {
+            return value.trim();
+        }
+        return defaultValue == null ? "" : defaultValue.trim();
+    }
+
+    static void putOptionalString(SharedPreferences.Editor editor, String key, String value) {
+        String trimmedValue = value == null ? "" : value.trim();
+        if (trimmedValue.isEmpty()) {
+            editor.remove(key);
+        } else {
+            editor.putString(key, trimmedValue);
+        }
     }
 
     static int getPositiveInt(SharedPreferences prefs, String key, int defaultValue) {

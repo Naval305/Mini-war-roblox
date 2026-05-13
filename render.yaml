@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mini-war-scanner-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: SCAN_API_KEY
+        sync: false
+      - key: ITEMS
+        sync: false
+      - key: MIN_ALERT_PERCENTAGE
+        sync: false
+      - key: MAX_ALERT_PERCENTAGE
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
