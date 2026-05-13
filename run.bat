@@ -12,7 +12,7 @@ if errorlevel 1 (
 
 if not exist ".env" (
     echo Missing .env file.
-    echo Copy .env.example to .env and add your Gemini and Discord values.
+    echo Copy .env.example to .env and add your Groq and Discord values.
     pause
     exit /b 1
 )

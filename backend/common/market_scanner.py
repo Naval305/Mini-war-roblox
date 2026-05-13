@@ -1,5 +1,6 @@
 import json
 import os
+import io
 import re
 import urllib.error
 import urllib.request
@@ -9,8 +10,8 @@ import cv2
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from groq import Groq
+import base64
 from PIL import Image
 
 load_dotenv()
@@ -46,9 +47,9 @@ ITEMS = _env_list("ITEMS", DEFAULT_ITEMS)
 MIN_ALERT_PERCENTAGE = _env_int("MIN_ALERT_PERCENTAGE", DEFAULT_MIN_ALERT_PERCENTAGE)
 MAX_ALERT_PERCENTAGE = _env_int("MAX_ALERT_PERCENTAGE", DEFAULT_MAX_ALERT_PERCENTAGE)
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-gemini_client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 
 @dataclass
@@ -118,7 +119,7 @@ def _extract_json_object(text):
     start = text.find("{")
     end = text.rfind("}")
     if start == -1 or end == -1 or end <= start:
-        raise ValueError(f"Gemini did not return a JSON object: {text}")
+        raise ValueError(f"Groq did not return a JSON object: {text}")
 
     return json.loads(text[start : end + 1])
 
@@ -154,38 +155,32 @@ def _normalize_percentage(value):
     return int(match.group()) if match else None
 
 
-def _extract_market_with_gemini(crop):
-    if gemini_client is None:
-        raise RuntimeError("GOOGLE_API_KEY is not set.")
+def _extract_market_with_groq(crop):
+    if groq_client is None:
+        raise RuntimeError("GROQ_API_KEY is not set.")
 
-    prompt = """
-You are a strict data extraction tool. Return only valid JSON and no markdown.
+    pil_img = _cv2_to_pil(crop)
+    buffer = io.BytesIO()
+    pil_img.save(buffer, format="PNG")
+    b64 = base64.b64encode(buffer.getvalue()).decode()
 
-Extract the visible market table from this image.
+    prompt = """Return only valid JSON, no markdown.
+Extract the market table from this image.
+Schema: {"next_price_in": "MM:SS", "items": [{"item_name": "string", "price": 1234, "percentage": -12}]}
+price is integer without $. percentage is signed integer, green=positive, red=negative."""
 
-Schema:
-{
-  "next_price_in": "MM:SS",
-  "items": [
-    {"item_name": "string", "price": 1234, "percentage": -12}
-  ]
-}
-
-Rules:
-- Read only market rows inside the wooden board.
-- Ignore the Market title/header and all UI outside the board.
-- If a row is partially cut off at the top or bottom, omit it.
-- price must be an integer without "$".
-- percentage must be a signed integer. Green plus values are positive; red minus values are negative.
-- Include all fully visible item rows, even if the percentage is not in the alert range.
-""".strip()
-
-    response = gemini_client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[_cv2_to_pil(crop), prompt],
-        config=types.GenerateContentConfig(response_mime_type="application/json"),
+    response = groq_client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                {"type": "text", "text": prompt},
+            ]
+        }],
+        max_tokens=500
     )
-    return _extract_json_object(response.text or "")
+    return _extract_json_object(response.choices[0].message.content or "")
 
 
 def _market_json_to_result(data):
@@ -266,14 +261,15 @@ def notify(alert_items):
 
 def process_image(image):
     crop = crop_market_table(image)
-    data = _extract_market_with_gemini(crop)
+
+    if groq_client is not None:
+        data = _extract_market_with_groq(crop)
+    else:
+        raise RuntimeError("No API client configured. Set GROQ_API_KEY.")
+
     next_price_in, items = _market_json_to_result(data)
     alert_items = get_alert_items(items)
-    return ScanResult(
-        next_price_in=next_price_in,
-        items=items,
-        alert_items=alert_items,
-    )
+    return ScanResult(next_price_in=next_price_in, items=items, alert_items=alert_items)
 
 
 def process_image_bytes(image_bytes):

@@ -6,7 +6,9 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
-      - key: GEMINI_API_KEY
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
         sync: false
       - key: DISCORD_WEBHOOK_URL
         sync: false
@@ -15,6 +17,4 @@ services:
       - key: MIN_ALERT_PERCENTAGE
         sync: false
       - key: MAX_ALERT_PERCENTAGE
-        sync: false
-      - key: GEMINI_MODEL
         sync: false

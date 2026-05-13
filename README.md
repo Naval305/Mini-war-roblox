@@ -1,6 +1,6 @@
 # Mini War Market Alert
 
-Continuously screenshots the Roblox market board, crops the board, extracts market data with Gemini, and sends Discord alerts for configured items in the configured percentage range.
+Continuously screenshots the Roblox market board, crops the board, extracts market data with Groq, and sends Discord alerts for configured items in the configured percentage range.
 
 ## Home PC Setup
 
@@ -29,7 +29,7 @@ copy .env.example .env
 Then fill in:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 DISCORD_WEBHOOK_URL=your_discord_webhook
 ```
 
@@ -50,7 +50,7 @@ run.bat
 This desktop mode still works exactly as the original flow:
 
 ```text
-PC screenshot -> crop -> Gemini -> filter -> Discord alert
+PC screenshot -> crop -> Groq -> filter -> Discord alert
 ```
 
 ## Calibration
@@ -85,7 +85,7 @@ The repo can also run as a backend for the Android tablet app.
 In this mode:
 
 ```text
-Android screenshot upload -> backend crop -> Gemini -> filter -> Discord alert
+Android screenshot upload -> backend crop -> Groq -> filter -> Discord alert
 ```
 
 ### Start The Backend
@@ -122,7 +122,7 @@ This backend is stateless and can run on a Render Free Web Service without keepi
 4. Fill in these environment variables when Render prompts for them:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 DISCORD_WEBHOOK_URL=your_discord_webhook
 ```
 
@@ -132,7 +132,7 @@ Optional env vars:
 ITEMS=Diamonds,Uran Ore,Stable Uran,Data Cube
 MIN_ALERT_PERCENTAGE=27
 MAX_ALERT_PERCENTAGE=50
-GEMINI_MODEL=gemini-3-flash-preview
+GROQ_MODEL=groq-3-flash-preview
 ```
 
 #### Option B: Manual Web Service
@@ -189,7 +189,7 @@ The Android app currently does two lightweight jobs:
 1. Captures the full tablet screen every 180 seconds by default.
 2. Performs one configured accessibility tap every 14 minutes by default for anti-AFK while Roblox is the foreground app.
 
-The app does **not** crop or parse the image on the tablet. It uploads the screenshot to a backend URL as `multipart/form-data` with a single file field named `image`. Cropping, Gemini extraction, item filtering, and Discord alerts should happen on the backend.
+The app does **not** crop or parse the image on the tablet. It uploads the screenshot to a backend URL as `multipart/form-data` with a single file field named `image`. Cropping, Groq extraction, item filtering, and Discord alerts should happen on the backend.
 
 ### Android Requirements
 
