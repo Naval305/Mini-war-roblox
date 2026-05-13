@@ -1,11 +1,7 @@
-import os
-import secrets
 import traceback
 
 from fastapi import FastAPI
-from fastapi import Depends
 from fastapi import File
-from fastapi import Header
 from fastapi import HTTPException
 from fastapi import UploadFile
 
@@ -20,19 +16,8 @@ def health():
     return {"ok": True}
 
 
-def require_scan_api_key(x_api_key: str | None = Header(default=None)):
-    expected_api_key = os.getenv("SCAN_API_KEY", "").strip()
-    if not expected_api_key:
-        raise HTTPException(status_code=500, detail="SCAN_API_KEY is not configured.")
-    if not x_api_key or not secrets.compare_digest(x_api_key, expected_api_key):
-        raise HTTPException(status_code=401, detail="Invalid API key.")
-
-
 @app.post("/scan")
-async def scan(
-    image: UploadFile = File(...),
-    _authorized: None = Depends(require_scan_api_key),
-):
+async def scan(image: UploadFile = File(...)):
     image_bytes = await image.read()
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded image is empty.")

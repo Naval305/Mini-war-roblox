@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -28,7 +27,6 @@ public class MainActivity extends Activity {
     private static final int REQUEST_NOTIFICATIONS = 1002;
 
     private EditText backendUrlInput;
-    private EditText scanApiKeyInput;
     private EditText captureIntervalInput;
     private EditText tapIntervalInput;
     private EditText tapXInput;
@@ -65,9 +63,6 @@ public class MainActivity extends Activity {
 
         String backendUrl = ScannerPrefs.getOptionalString(prefs, ScannerPrefs.KEY_BACKEND_URL, BuildConfig.BACKEND_URL);
         backendUrlInput = addInput(root, "Backend upload URL", backendUrl);
-        String scanApiKey = ScannerPrefs.getOptionalString(prefs, ScannerPrefs.KEY_SCAN_API_KEY, BuildConfig.SCAN_API_KEY);
-        scanApiKeyInput = addInput(root, "Backend API key", scanApiKey);
-        scanApiKeyInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
         captureIntervalInput = addInput(root, "Capture interval seconds", String.valueOf(ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_CAPTURE_INTERVAL_SECONDS, ScannerPrefs.DEFAULT_CAPTURE_INTERVAL_SECONDS)));
         tapIntervalInput = addInput(root, "Anti-AFK tap interval seconds", String.valueOf(ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_TAP_INTERVAL_SECONDS, ScannerPrefs.DEFAULT_TAP_INTERVAL_SECONDS)));
@@ -128,7 +123,6 @@ public class MainActivity extends Activity {
     private void saveSettings() {
         SharedPreferences.Editor editor = ScannerPrefs.get(this).edit();
         ScannerPrefs.putOptionalString(editor, ScannerPrefs.KEY_BACKEND_URL, backendUrlInput.getText().toString());
-        ScannerPrefs.putOptionalString(editor, ScannerPrefs.KEY_SCAN_API_KEY, scanApiKeyInput.getText().toString());
 
         editor
             .putString(ScannerPrefs.KEY_CAPTURE_INTERVAL_SECONDS, captureIntervalInput.getText().toString().trim())

@@ -31,7 +31,6 @@ Then fill in:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 DISCORD_WEBHOOK_URL=your_discord_webhook
-SCAN_API_KEY=your_shared_upload_key
 ```
 
 6. Open Roblox and keep the market board visible.
@@ -110,7 +109,6 @@ http://YOUR_PC_IP:8000/scan
 ```
 
 If the tablet and PC are on the same Wi-Fi, replace `YOUR_PC_IP` with the PC's local network IP.
-Set the Android app backend API key to the same value as `SCAN_API_KEY`.
 
 ### Deploy To Render
 
@@ -126,7 +124,6 @@ This backend is stateless and can run on a Render Free Web Service without keepi
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 DISCORD_WEBHOOK_URL=your_discord_webhook
-SCAN_API_KEY=your_shared_upload_key
 ```
 
 Optional env vars:
@@ -157,8 +154,6 @@ After deployment, copy the Render service URL and set the Android backend upload
 https://YOUR_RENDER_SERVICE.onrender.com/scan
 ```
 
-Then set the Android backend API key to the same `SCAN_API_KEY` value.
-
 ### API Contract
 
 Endpoint:
@@ -166,7 +161,6 @@ Endpoint:
 ```http
 POST /scan
 Content-Type: multipart/form-data
-X-API-Key: your_shared_upload_key
 ```
 
 Multipart field:
@@ -229,16 +223,15 @@ Install that APK on the tablet.
 https://your-render-service.onrender.com/scan
 ```
 
-3. Fill in the backend API key. It must match the backend `SCAN_API_KEY`.
-4. Keep **Capture interval seconds** at `180` unless the market refresh timing changes.
-5. Set **Tap X coordinate** and **Tap Y coordinate** to a safe Roblox screen position. The anti-AFK service only taps while the official Roblox package, `com.roblox.client`, is foregrounded.
-6. Keep **Anti-AFK tap interval seconds** at `840` for one tap every 14 minutes.
-7. Leave JPEG compression disabled for PNG uploads, or enable JPEG if the backend/network needs smaller images.
-8. Tap **Save Settings**.
-9. Tap **Open Accessibility Settings** and enable **Mini War Anti-AFK Tapper**.
-10. Return to the app and tap **Start Screen Capture**.
-11. Accept Android's screen-capture prompt.
-12. Switch back to Roblox and leave the market visible.
+3. Keep **Capture interval seconds** at `180` unless the market refresh timing changes.
+4. Set **Tap X coordinate** and **Tap Y coordinate** to a safe Roblox screen position. The anti-AFK service only taps while the official Roblox package, `com.roblox.client`, is foregrounded.
+5. Keep **Anti-AFK tap interval seconds** at `840` for one tap every 14 minutes.
+6. Leave JPEG compression disabled for PNG uploads, or enable JPEG if the backend/network needs smaller images.
+7. Tap **Save Settings**.
+8. Tap **Open Accessibility Settings** and enable **Mini War Anti-AFK Tapper**.
+9. Return to the app and tap **Start Screen Capture**.
+10. Accept Android's screen-capture prompt.
+11. Switch back to Roblox and leave the market visible.
 
 ### Backend Upload Contract
 
@@ -248,7 +241,6 @@ The Android app sends:
 POST /scan
 Content-Type: multipart/form-data
 User-Agent: MiniWarAndroidScanner/0.1.0
-X-API-Key: your_shared_upload_key
 ```
 
 Multipart fields:

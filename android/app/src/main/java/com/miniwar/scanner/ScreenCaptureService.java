@@ -208,7 +208,6 @@ public class ScreenCaptureService extends Service {
     private void uploadBitmap(Bitmap bitmap) throws IOException {
         SharedPreferences prefs = ScannerPrefs.get(this);
         String backendUrl = ScannerPrefs.getOptionalString(prefs, ScannerPrefs.KEY_BACKEND_URL, BuildConfig.BACKEND_URL);
-        String scanApiKey = ScannerPrefs.getOptionalString(prefs, ScannerPrefs.KEY_SCAN_API_KEY, BuildConfig.SCAN_API_KEY);
         boolean useJpeg = prefs.getBoolean(ScannerPrefs.KEY_USE_JPEG, false);
         int jpegQuality = Math.min(100, Math.max(1, ScannerPrefs.getPositiveInt(prefs, ScannerPrefs.KEY_JPEG_QUALITY, ScannerPrefs.DEFAULT_JPEG_QUALITY)));
 
@@ -232,9 +231,6 @@ public class ScreenCaptureService extends Service {
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         connection.setRequestProperty("User-Agent", "MiniWarAndroidScanner/0.1.0");
-        if (!scanApiKey.isEmpty()) {
-            connection.setRequestProperty("X-API-Key", scanApiKey);
-        }
 
         try (DataOutputStream request = new DataOutputStream(new BufferedOutputStream(connection.getOutputStream()))) {
             request.writeBytes("--" + boundary + "\r\n");

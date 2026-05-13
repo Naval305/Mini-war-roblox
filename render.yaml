@@ -10,8 +10,6 @@ services:
         sync: false
       - key: DISCORD_WEBHOOK_URL
         sync: false
-      - key: SCAN_API_KEY
-        sync: false
       - key: ITEMS
         sync: false
       - key: MIN_ALERT_PERCENTAGE

@@ -20,6 +20,5 @@ android {
         versionCode 1
         versionName '0.1.0'
         buildConfigField "String", "BACKEND_URL", "\"${properties.getProperty('BACKEND_URL', '')}\""
-        buildConfigField "String", "SCAN_API_KEY", "\"${properties.getProperty('SCAN_API_KEY', '')}\""
     }
 }

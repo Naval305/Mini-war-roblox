@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 final class ScannerPrefs {
     static final String PREFS_NAME = "mini_war_scanner";
     static final String KEY_BACKEND_URL = "backend_url";
-    static final String KEY_SCAN_API_KEY = "scan_api_key";
     static final String KEY_CAPTURE_INTERVAL_SECONDS = "capture_interval_seconds";
     static final String KEY_TAP_INTERVAL_SECONDS = "tap_interval_seconds";
     static final String KEY_TAP_X = "tap_x";
